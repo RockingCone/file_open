@@ -3,21 +3,29 @@ use std::env;
 use std::fs;
 use std::process;
 use std::error::Error;
+use std::collections::HashMap;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+    let mut preferences = HashMap::new();
+
+    preferences.insert(String::from("default"), String::from("nvim"));
+
     let target = Target::build(&args).unwrap_or_else(|err| {
         eprintln!("Problem parsing arguments: {err}");
         process::exit(1);
     });
 
-    println!("{target:?}"); 
+    let program = preferences.get(&target.file_extension).unwrap_or_else( ||
+        preferences.get("default").unwrap_or_else( || {
+            eprintln!("No default open program");
+            process::exit(1);
+        })
+    );
 
-    //Command::new("nvim").arg(&args[1]).status().expect("failed to execute process");
-}
+    Command::new(program).arg(target.file_path + "." + &target.file_extension).status().expect("failed to execute process");
+} 
 
-#[derive(Debug)]
 pub struct Target {
     pub file_extension: String,
     pub file_path: String,
