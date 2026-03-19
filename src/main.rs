@@ -1,16 +1,21 @@
 use std::process::Command;
 use std::os::unix::process::CommandExt;
 use std::env;
-//use std::fs;
+use std::fs;
 use std::process;
 //use std::error::Error;
 use std::collections::HashMap;
 
 fn main() {
+    // Collect user input arguments
     let args: Vec<String> = env::args().collect();
-    let mut preferences = HashMap::new();
 
-    preferences.insert(String::from("default"), String::from("nvim"));
+    let preferences_file = fs::read_to_string("preferences.toml").unwrap_or_else( |err| {
+        eprintln!("Problem accessing preferences: {err}");
+        process::exit(1);
+    });
+
+    let preferences = parse_preferences(&preferences_file);
 
     let target = Target::build(&args).unwrap_or_else(|err| {
         eprintln!("Problem parsing arguments: {err}");
@@ -57,4 +62,26 @@ impl Target {
 
         Ok(Target { file_extension, file_path })
     }
+}
+
+pub fn parse_preferences(preferences_file: &str) -> HashMap<String, String> {
+    let mut preferences = HashMap::new();
+    
+    for line in preferences_file.lines() {
+        let args: Vec<&str> = line.trim().split('=').collect();
+        let program = args[0].trim();
+
+        let extensions: Vec<&str> = args[1].trim().split(&['[', ' ', ',', ']'][..]).collect();
+        for extension in extensions {
+            preferences.insert(extension.trim().trim_matches('"').to_string(), program.to_string());
+        }
+        //if '[' in args[1].chars() {    
+        //} else {
+        //    preferences.insert(program, args[1].trim_matches('"'));
+        //}
+        //preferences.insert(args[1].trim().trim_matches('"').to_string(), program.to_string());
+    }
+    
+
+    preferences
 }
