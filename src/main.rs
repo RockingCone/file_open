@@ -1,8 +1,9 @@
 use std::process::Command;
+use std::os::unix::process::CommandExt;
 use std::env;
-use std::fs;
+//use std::fs;
 use std::process;
-use std::error::Error;
+//use std::error::Error;
 use std::collections::HashMap;
 
 fn main() {
@@ -23,7 +24,7 @@ fn main() {
         })
     );
 
-    Command::new(program).arg(target.file_path + "." + &target.file_extension).status().expect("failed to execute process");
+    let _ = Command::new(program).arg(target.file_path + "." + &target.file_extension).exec();
 } 
 
 pub struct Target {
