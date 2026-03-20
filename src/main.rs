@@ -72,20 +72,16 @@ impl Target {
             return Err("not enough arguments");
         }
 
-        let full_file_string = args[1].clone();
+        //let full_file_string = args[1].clone();
         
-        let mut file_extension = String::new();
         let mut file_path = String::new();
-        
-        let mut extension_found = false;
+        let mut file_extension = String::new();
 
-        for c in full_file_string.chars().rev() {
-            if !extension_found && (c == '.') {
-                extension_found = true;   
-            } else if !extension_found {
-                file_extension = c.to_string() + &file_extension;
-            } else {
-                file_path = c.to_string() + &file_path;
+        let file_split: Vec<&str> = args[1].split('.').collect();
+        file_path.push_str(&file_split[0]);
+        for str in file_split {
+            if str != &file_path {
+                file_extension.push_str(str);
             }
         }
 
