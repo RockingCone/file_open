@@ -3,33 +3,62 @@ use std::os::unix::process::CommandExt;
 use std::env;
 use std::fs;
 use std::process;
-//use std::error::Error;
 use std::collections::HashMap;
 
 fn main() {
-    // Collect user input arguments
+    // Collect user arguments
     let args: Vec<String> = env::args().collect();
+    
+    // Get user home directory to use configs
+    let home = match env::home_dir() {
+        Some(dir) => dir,
+        None => {
+            eprintln!("Gobbo");
+            process::exit(1)
+        },
+    };
+    let home = home.display();
+    
+    // Copy config file into hashmap. Create default file is none exists.
+    let config_file = format!("{home}/.config/open/config.toml");
+    if !fs::metadata(&config_file).is_ok() {
+        let mut default_config = String::from("nano = ");
+        default_config.push('"');
+        default_config.push_str("default");
+        default_config.push('"');
 
-    let preferences_file = fs::read_to_string("preferences.toml").unwrap_or_else( |err| {
+        let config_dir = format!("{home}/.config/open");
+        fs::create_dir(config_dir).unwrap_or_else( |err| {
+            eprintln!("Problem creating config directory: {err}");
+            process::exit(1);
+        });
+        fs::write(&config_file, default_config).unwrap_or_else( |err| {
+            eprintln!("Problem creating config file: {err}");
+            process::exit(1);
+        });
+    }
+    let config_file = fs::read_to_string(config_file).unwrap_or_else( |err| {
         eprintln!("Problem accessing preferences: {err}");
         process::exit(1);
     });
+    let config = parse_config(&config_file);
 
-    let preferences = parse_preferences(&preferences_file);
-
+    // Parse user arguments and determine required program to open file
     let target = Target::build(&args).unwrap_or_else(|err| {
         eprintln!("Problem parsing arguments: {err}");
         process::exit(1);
     });
-
-    let program = preferences.get(&target.file_extension).unwrap_or_else( ||
-        preferences.get("default").unwrap_or_else( || {
+    let program = config.get(&target.file_extension).unwrap_or_else( ||
+        config.get("default").unwrap_or_else( || {
             eprintln!("No default open program");
             process::exit(1);
         })
     );
-
-    let _ = Command::new(program).arg(target.file_path + "." + &target.file_extension).exec();
+    
+    // Open user specified file using the 
+    let _ = Command::new(program)
+        .arg(target.file_path + "." + &target.file_extension)
+        .exec();
 } 
 
 pub struct Target {
@@ -64,24 +93,19 @@ impl Target {
     }
 }
 
-pub fn parse_preferences(preferences_file: &str) -> HashMap<String, String> {
-    let mut preferences = HashMap::new();
+pub fn parse_config(config_file: &str) -> HashMap<String, String> {
+    let mut config = HashMap::new();
     
-    for line in preferences_file.lines() {
+    for line in config_file.lines() {
         let args: Vec<&str> = line.trim().split('=').collect();
         let program = args[0].trim();
 
         let extensions: Vec<&str> = args[1].trim().split(&['[', ' ', ',', ']'][..]).collect();
         for extension in extensions {
-            preferences.insert(extension.trim().trim_matches('"').to_string(), program.to_string());
+            config.insert(extension.trim().trim_matches('"').to_string(), program.to_string());
         }
-        //if '[' in args[1].chars() {    
-        //} else {
-        //    preferences.insert(program, args[1].trim_matches('"'));
-        //}
-        //preferences.insert(args[1].trim().trim_matches('"').to_string(), program.to_string());
     }
     
 
-    preferences
+    config
 }

@@ -1,3 +1,0 @@
-nano = "default"
-code = ["c", "cpp", "py"]
-nvim = ["rs", "txt"]
