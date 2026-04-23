@@ -29,23 +29,23 @@ fn main() {
 
         let config_dir = format!("{home}/.config/open");
         fs::create_dir(config_dir).unwrap_or_else( |err| {
-            eprintln!("Problem creating config directory: {err}");
+            eprintln!("Error creating config directory: {err}");
             process::exit(1);
         });
         fs::write(&config_file, default_config).unwrap_or_else( |err| {
-            eprintln!("Problem creating config file: {err}");
+            eprintln!("Error creating config file: {err}");
             process::exit(1);
         });
     }
     let config_file = fs::read_to_string(config_file).unwrap_or_else( |err| {
-        eprintln!("Problem accessing preferences: {err}");
+        eprintln!("Error accessing config file: {err}");
         process::exit(1);
     });
     let config = parse_config(&config_file);
 
     // Parse user arguments and determine required program to open file
     let target = Target::build(&args).unwrap_or_else(|err| {
-        eprintln!("Problem parsing arguments: {err}");
+        eprintln!("Error parsing arguments: {err}");
         process::exit(1);
     });
     let program = config.get(&target.file_extension).unwrap_or_else( ||
@@ -55,7 +55,7 @@ fn main() {
         })
     );
     
-    // Open user specified file using the 
+    // Open user specified file using the program drawn from config
     let _ = Command::new(program)
         .arg(target.file_path + "." + &target.file_extension)
         .exec();
